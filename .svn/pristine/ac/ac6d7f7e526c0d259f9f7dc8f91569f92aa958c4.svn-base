@@ -1,0 +1,632 @@
+<template>
+    <div class="picker main-content-mask">
+        <div class="main-content">
+            <template v-for="pickers,$index in pickerArray">
+                <div class="contents" v-if="pickers.length>0">
+                    <div class="content-target"
+                         :style="{transitionDuration: !endMoveFlag?'0ms':'1000ms',webkitTransform: 'translateY('+ defaultOldY*2 +'em)'}">
+                        <div v-for="picker in pickers" class="row exceed">{{formatValue && formatValue($index,picker) || picker}}</div>
+                    </div>
+                </div>
+                <div class="title" v-if="showRightTitle && gagArray[$index]">
+                    <div>{{gagArray[$index]}}</div>
+                </div>
+            </template>
+            <div class="picker-center-light"></div>
+        </div>
+    </div>
+</template>
+<script>
+    export default {
+        name: 'picker',
+        props: {
+            /*类型，字段可以有：年，月，日，时，分，省，市，县*/
+            type: {
+                type: String,
+                default: '年-月-日'
+            },
+            /*地址*/
+            address: {
+                type: Array,
+                default: function () {
+                    return []
+                }
+            },
+            /*省份，可以为名称，也可以是代码*/
+            province: {
+                type: String,
+                default:'浙江省'
+            },
+            /*市*/
+            city: {
+                type: String,
+                default:'杭州市'
+            },
+            /*县或区*/
+            area: {
+                type: String,
+                default:'上城区'
+            },
+            /*自定义数据*/
+            slots: {
+                type: Array,
+                default: function () {
+                    return []
+                }
+            },
+            /*年月日等这些后缀可以支持自定义，对应到type的数量就行*/
+            title: {
+                type: String
+            },
+            /*像个多少天跨度*/
+            spanDay: {
+                type: Number,
+            },
+            /*开始日期*/
+            startDate: {
+                type: Date,
+            },
+            /*终止日期*/
+            endDate: {
+                type: Date,
+                default: function () {
+                    if (this.spanDay) {
+                        return new Date(Date.parse(new Date()) + this.spanDay * 24 * 1000 * 3600);
+                    }
+                }
+            },
+
+            /*初始化时显示日期或者地区*/
+            current: {
+                type: Date,
+                default: function () {
+                    var date = new Date().getTime();
+                    if (this.startDate && date < this.startDate.getTime() || this.endDate && date > this.endDate.getTime()) {
+                        return this.startDate
+                    } else {
+                        return new Date();
+                    }
+                }
+            },
+            /*是否展示月，年，日这种的小标题*/
+            showTitle: {
+                type: Boolean,
+                default: false
+            },
+            /*格式化值，会传一个index，以及value值过去*/
+            formatValue: {
+                type: Function
+            },
+            /*城市地区key*/
+            name: {
+                type: String,
+                default: 'name'
+            },
+            /*城市地区名的代码key*/
+            code: {
+                type: String,
+                default: 'code'
+            },
+            /*城市地区名子集key*/
+            child: {
+                type: String,
+                default: 'child'
+            },
+        },
+        data(){
+            return {
+                startYear: 1990,
+                endYear: 2025,
+                startMonth: 1,
+                endMonth: 12,
+                startDay: 1,
+                endDay: 31,
+                startHour: 0,
+                endHour: 23,
+                startMinute: 0,
+                endMinute: 59,
+                /*type对应的数组*/
+                types: [],
+                /*默认中间对齐，所以去两个*/
+                defaultOldY: 2,
+                /*循环的数组值对象*/
+                pickerArray: [],
+                /*循环的数组的标题对象*/
+                gagArray: [],
+                /*起始位置*/
+                startY: 0,
+                /*当前位置*/
+                currentY: 0,
+                /*历史移动的位置*/
+                oldY: 0,
+                /*touch对应的节点*/
+                touchTarget: null,
+                /*位移距离*/
+                distance: 0,
+                /*em和px换算因子，越大移动的越缓慢，越小移动一次的距离越快*/
+                factor: 25,
+                /*缓动加速度*/
+                deceleration: 0.0006,
+                /*是否移动结束的标志*/
+                endMoveFlag: false,
+                /*当前值*/
+                currentValue: this.current,
+                /*当前省*/
+                currentProvince: this.province,
+                /*当前市*/
+                currentCity: this.city,
+                /*当前区或县*/
+                currentArea: this.area,
+            };
+        },
+        computed: {
+            /*是否展示年-月-日这样的title*/
+            showRightTitle() {
+                return this.showTitle;
+            },
+        },
+        beforeMount() {
+            this.init();
+        },
+        mounted() {
+            this.addTouchEvent();
+            this.type.indexOf('custom') < 0 && this.changeCurrent();
+            this.$emit('handlePicker', this.currentValue);
+        },
+        methods: {
+            /*初始化*/
+            init() {
+                this.generateData();
+                this.generateDom();
+            },
+            /*初始化数据*/
+            generateData(){
+                this.types = this.type.split('-');
+                if (this.endDate) {
+                    var startDate = this.startDate || new Date();
+                    var endDate = this.endDate;
+                    if (startDate.getTime() >= endDate.getTime()) {
+                        console.log('开始时间不能小于终止时间');
+                        return;
+                    }
+                    this.startYear = startDate.getFullYear();
+                    this.endYear = endDate.getFullYear();
+                }
+            },
+            /*根据初始化数据生成dom节点*/
+            generateDom(){
+                var types = this.types;
+                var titles = this.title ? this.title.split('-') : types;
+                for (var i = 0, len = types.length; i < len; i++) {
+                    this.pickerArray.push([]);
+                    switch (types[i]) {
+                        case "年":
+                            for (let year = Number(this.startYear), end = Number(this.endYear); year <= end; year++) {
+                                this.pickerArray[i].push(year);
+                            }
+                            break;
+                        case "月":
+                            for (let month = Number(this.startMonth), end = Number(this.endMonth); month <= end; month++) {
+                                this.pickerArray[i].push(month);
+                            }
+                            break;
+                        case "日":
+                            for (let day = Number(this.startDay), end = Number(this.endDay); day <= end; day++) {
+                                this.pickerArray[i].push(day);
+                            }
+                            break;
+                        case "时":
+                            for (let hour = Number(this.startHour), end = Number(this.endHour); hour <= end; hour++) {
+                                this.pickerArray[i].push(hour);
+                            }
+                            break;
+                        case "分":
+                            for (let minute = Number(this.startMinute), end = Number(this.endMinute); minute <= end; minute++) {
+                                this.pickerArray[i].push(minute);
+                            }
+                            break;
+                        case "省":
+                            this.pickerArray[i][0] = '请选择';
+                            break;
+                        case "市":
+                            this.pickerArray[i][0] = '请选择';
+                            break;
+                        case "县":
+                            this.pickerArray[i][0] = '请选择';
+                            break;
+                        case "custom":  //自定义
+                            for (let custom = 0, len = this.slots[i].length; custom < len; custom++) {
+                                this.pickerArray[i].push(this.slots[i][custom]);
+                            }
+                            break;
+                    }
+                    this.gagArray[i] = titles[i];
+                }
+            },
+            /*通过名称或者代码value在array中获取地区对象*/
+            getCityFromArray(array, value){
+                if (!Array.isArray(array))
+                    return;
+                for (let block = 0, len = array.length; block < len; block++) {
+                    if (array[block][this.name] === value || array[block][this.code] === value) {
+                        return array[block];
+                    }
+                }
+            },
+            /*返回多少天之后的日期*/
+            getDiffDate(date, days) {
+                date = date == undefined ? new Date() : date;
+                typeof date == 'string' && (date = date.replace(/\ /g, "T")); // 目的是解决IOS时间问题
+                date = (typeof date == 'number' || typeof date == 'string') ? new Date(date) : date;
+                days = days == undefined ? 30 : days * 1;
+                return new Date(Date.parse(date) + days * 24 * 1000 * 3600);
+            },
+            /*通过日期年-月，获取天数*/
+            getDaysInMonth(year, month) {
+                month = parseInt(month, 10);
+                var d = new Date(year, month, 0);
+                return d.getDate();
+            },
+            /*设置当前月份的值*/
+            setCurrentMonth(){
+                var nowMonth = this.currentValue.getMonth() + 1;
+                if (nowMonth < this.startMonth) {
+                    this.currentValue = new Date(this.currentValue.setMonth(this.startMonth - 1));
+                } else if (nowMonth > this.endMonth) {
+                    this.currentValue = new Date(this.currentValue.setMonth(this.endMonth - 1));
+                }
+            },
+            /*设置当前天数的值*/
+            setCurrentDay(){
+                var nowDay = this.currentValue.getDate();
+                if (nowDay < this.startDay) {
+                    this.currentValue = new Date(this.currentValue.setDate(this.startDay));
+                } else if (nowDay > this.endDay) {
+                    this.currentValue = new Date(this.currentValue.setDate(this.endDay));
+                }
+            },
+            /*设置当前的小时数*/
+            setCurrentHour(){
+                var nowHour = this.currentValue.getHours();
+                if (nowHour < this.startHour) {
+                    this.currentValue = new Date(this.currentValue.setHours(this.startHour));
+                } else if (nowHour > this.endHour) {
+                    this.currentValue = new Date(this.currentValue.setHours(this.endHour));
+                }
+            },
+            /*设置当前的分钟数*/
+            setCurrentMinute(){
+                var nowMinute = this.currentValue.getMinutes();
+                if (nowMinute < this.startMinute) {
+                    this.currentValue = new Date(this.currentValue.setMinutes(this.startMinute));
+                } else if (nowMinute > this.endMinute) {
+                    this.currentValue = new Date(this.currentValue.setMinutes(this.endMinute));
+                }
+            },
+            /*设置起止值*/
+            setData(date, type){
+                if (date.getFullYear() === this.currentValue.getFullYear()) {
+                    this[type + 'Month'] = date.getMonth() + 1;
+                    this.setCurrentMonth();
+                    if (date.getMonth() === this.currentValue.getMonth()) {
+                        this[type + 'Day'] = date.getDate();
+                        this.setCurrentDay();
+                        if (date.getDate() === this.currentValue.getDate()) {
+                            this[type + 'Hour'] = date.getHours();
+                            this.setCurrentHour();
+                            if (date.getHours() === this.currentValue.getHours()) {
+                                this[type + 'Minute'] = date.getMinutes();
+                                this.setCurrentMinute();
+                            }
+                        }
+                    }
+                }
+            },
+            /*通过startDate和endDate设置月数*/
+            setDate(){
+                if (this.endDate) {
+                    var startDate = this.startDate || new Date();
+                    var endDate = this.endDate;
+                    if (startDate.getTime() >= endDate.getTime()) {
+                        console.log('开始时间不能小于终止时间');
+                        return;
+                    }
+                    this.reInit();
+                    this.setData(startDate, 'start');
+                    this.setData(endDate, 'end');
+                } else {
+                    this.endDay = this.getDaysInMonth(this.currentValue.getFullYear(), this.currentValue.getMonth() + 1);
+                    this.setCurrentDay();
+                }
+            },
+            /*设置地区的的值*/
+            setCity(){
+                if (this.currentProvince) {
+                    this.currentValue = [];
+                    this.pickerArray[0] = [];
+                    for (let province = 0, len = this.address.length; province < len; province++) {
+                        this.pickerArray[0].push(this.address[province][this.name]);
+                    }
+                    var currentProvinceObj = this.getCityFromArray(this.address, this.currentProvince);
+                    this.currentValue[0] = {
+                        [this.name]:currentProvinceObj[this.name],
+                        [this.code]:currentProvinceObj[this.code],
+                    };
+                    var pickerArray = this.pickerArray;
+                    this.pickerArray = [];
+                    var cityArray = currentProvinceObj[this.child];
+                    pickerArray[1] = [];
+                    for (let city = 0, len = cityArray.length; city < len; city++) {
+                        pickerArray[1].push(cityArray[city][this.name]);
+                    }
+                    /*判断是否当前的市在市数组中*/
+                    var currentCityObj = this.getCityFromArray(cityArray, this.currentCity);
+                    this.currentCity = currentCityObj ? this.currentCity : cityArray[0][this.name];
+                    currentCityObj = this.getCityFromArray(cityArray, this.currentCity);
+                    this.currentValue[1] = {
+                        [this.name]:currentCityObj[this.name],
+                        [this.code]:currentCityObj[this.code],
+                    };
+                    var areaArray = currentCityObj[this.child];
+                    pickerArray[2] = [];
+                    for (let area = 0, len = areaArray.length; area < len; area++) {
+                        pickerArray[2].push(areaArray[area][this.name]);
+                    }
+                    /*判断当前的区是否在数组中*/
+                    var currentAreaObj = this.getCityFromArray(areaArray, this.currentArea);
+                    this.currentArea = currentAreaObj ? this.currentArea : areaArray[0][this.name];
+                    currentAreaObj = this.getCityFromArray(areaArray, this.currentArea)
+                    this.currentValue[2] = {
+                        [this.name]:currentAreaObj[this.name],
+                        [this.code]:currentAreaObj[this.code],
+                    };
+                    this.pickerArray = pickerArray;
+                    /*如果是多出来的要重新监听*/
+                    setTimeout(()=> {
+                        this.addTouchEvent();
+                    }, 0);
+                }
+            },
+            /*重置起止日期*/
+            reInit(){
+                this.startMonth = 1;
+                this.endMonth = 12;
+                this.startDay = 1;
+                this.endDay = this.getDaysInMonth(this.currentValue.getFullYear(), this.currentValue.getMonth() + 1);
+                this.startHour = 0;
+                this.endHour = 23;
+                this.startMinute = 0;
+                this.endMinute = 59;
+            },
+            /*获取目标touch目标节点*/
+            getTargetEl(element) {
+                let currentNode = element;
+                while (currentNode && currentNode.tagName !== 'HTML' &&
+                currentNode.tagName !== 'BODY' && currentNode.nodeType === 1) {
+                    if (currentNode.className && currentNode.classList.contains("content-target")) {
+                        return currentNode;
+                    }
+                    currentNode = currentNode.parentNode;
+                }
+                console.error("未找到类名称是：" + className + "的节点");
+                return null;
+            },
+            /*给每一个flex-left添加touch监听事件*/
+            addTouchEvent() {
+                let els = Array.prototype.slice.call(this.$el.querySelectorAll(".content-target"));
+                if (els instanceof Array) {
+                    for (let i = 0, len = els.length; i < len; i++) {
+                        els[i].addEventListener('touchstart', this.handleTouchStart);
+                        els[i].addEventListener('touchmove', this.handleTouchMove);
+                        els[i].addEventListener('touchend', this.handleTouchEnd);
+                    }
+                }
+            },
+            /*获取类型*/
+            getType(){
+                var types = this.type;
+                if (types.indexOf('月') >= 0 || types.indexOf('日') >= 0 || types.indexOf('年') >= 0 || types.indexOf('时') >= 0 || types.indexOf('分') >= 0) {
+                    return 'date'
+                } else if (types.indexOf('省') >= 0 || types.indexOf('市') >= 0 || types.indexOf('县') >= 0) {
+                    return 'city';
+                } else {
+                    return 'custom';
+                }
+            },
+            /*移动到当前数据节点*/
+            changeCurrent() {
+                var types = this.types;
+                var data = this.$el.querySelectorAll('.content-target');
+                var type = this.getType();
+                // 随着年份和月份的改变，改变天数的多少
+                if (type === 'date') {
+                    this.setDate();
+                    this.changeData('月', this.endMonth, this.startMonth);
+                    this.changeData('日', this.endDay, this.startDay);
+                    this.changeData('时', this.endHour, this.startHour);
+                    this.changeData('分', this.endMinute, this.startMinute);
+                } else if (type === 'city') {
+                    this.setCity();
+                }
+                for (var i = 0, len = types.length; i < len; i++) {
+                    switch (types[i]) {
+                        case "年": // 日期
+                            var countYear = this.pickerArray[i].indexOf(this.currentValue.getFullYear());
+                            this.translateYCount(data[i], -countYear);
+                            break;
+                        case "月":
+                            var countMonth = this.pickerArray[i].indexOf(this.currentValue.getMonth()+1);
+                            this.translateYCount(data[i], -countMonth);
+                            break;
+                        case "日":
+                            var countDay = this.pickerArray[i].indexOf(this.currentValue.getDate());
+                            this.translateYCount(data[i], -countDay);
+                            break;
+                        case "时":
+                            var countHour = this.pickerArray[i].indexOf(this.currentValue.getHours());
+                            this.translateYCount(data[i], -countHour);
+                            break;
+                        case "分":
+                            var countMinute = this.pickerArray[i].indexOf(this.currentValue.getMinutes());
+                            this.translateYCount(data[i], -countMinute);
+                            break;
+                        case "省":
+                            var countProvince = this.pickerArray[i].indexOf(this.currentProvince);
+                            this.translateYCount(data[i], -countProvince);
+                            break;
+                        case "市":
+                            var countCity = this.pickerArray[i].indexOf(this.currentCity);
+                            this.translateYCount(data[i], -countCity);
+                            break;
+                        case "县":
+                            var countArea = this.pickerArray[i].indexOf(this.currentArea);
+                            this.translateYCount(data[i], -countArea);
+                            break;
+                    }
+                }
+            },
+            /*移动dom节点多少个count，count可以为正和负，分别代表上下方向*/
+            translateYCount(dom, count) {
+                dom.style["-webkit-transform"] = 'translateY(' + (count + this.defaultOldY) * 2 + 'em)';
+            },
+            /*改变year或者month的时候都需要同步改变天数(count天)*/
+            changeData(type, end, start = 1) {
+                var types = this.types;
+                var data = this.$el.querySelectorAll('.content-target');
+                for (var i = 0, len = types.length; i < len; i++) {
+                    if (types[i] === type) {
+                        var arr = this.pickerArray;
+                        this.pickerArray = [];
+                        arr[i] = [];
+                        for (var num = start; num <= end; num++) {
+                            arr[i].push(num);
+                        }
+                        this.pickerArray = arr;
+                        return;
+                    }
+                }
+            },
+            /*得到当前移动的是什么节点的下标*/
+            getCurrentNodeIndex(dom) {
+                let els = Array.prototype.slice.call(this.$el.querySelectorAll(".content-target"));
+                var index;
+                els.forEach((node, i) => {
+                    if (node === dom) {
+                        index = i;
+                    }
+                });
+                return index;
+            },
+            /*获取解析当前dom节点现在的translateY的值*/
+            getTranslateY(dom) {
+                var transformString = dom.style.transform;
+                if (transformString) {
+                    return Number(transformString.match(/\+?\-?\d+/g)[0]);
+                } else {
+                    return 0;
+                }
+            },
+            handleTouchStart(event) {
+                event.preventDefault();
+                this.startTime = new Date().getTime();
+                this.endMoveFlag = false;
+                this.startY = event.targetTouches[0].screenY;
+                this.touchTarget = this.getTargetEl(event.target);
+                /*每次移动开始时设置初始的oldY的值*/
+                this.oldY = this.getTranslateY(this.touchTarget);
+            },
+            handleTouchMove(event) {
+                this.currentY = event.targetTouches[0].screenY;
+                this.distance = this.currentY - this.startY;
+                let temDis = this.distance / this.factor + this.oldY;
+                this.touchTarget.style["-webkit-transform"] = 'translateY(' + temDis + 'em)';
+            },
+            handleTouchEnd(event) {
+                event.preventDefault();
+                this.endMoveFlag = true;
+                let temDis = Math.round(this.distance / this.factor) + this.oldY;
+                /*计算缓动值*/
+                var duration = new Date().getTime() - this.startTime;
+                // 300毫秒是判断间隔的最佳时间
+                if (duration < 300 && Math.abs(this.distance) > 10) {
+                    var distance = this.distance,
+                            speed = Math.abs(distance) / duration,
+                            destination,
+                            deceleration = this.deceleration;  // 加速度因子
+                    // 初速度为0 距离等于速度的平方除以2倍加速度
+                    destination = (speed * speed) / (2 * deceleration) * (distance < 0 ? -1 : 1);
+                    // 初始时间为0，初始速度为0 时间等于速度除以加速度
+                    duration = speed / deceleration;
+                    temDis += Math.round(destination / this.factor);
+                }
+                /*设置为2的整数倍，来达到移动的是整数个节点*/
+                temDis = temDis % 2 === 0 ? temDis : temDis - 1;
+                /*设置最小值*/
+                if (temDis > this.defaultOldY * 2) {
+                    temDis = this.defaultOldY * 2;
+                }
+                /*设置最大值*/
+                var index = this.getCurrentNodeIndex(this.touchTarget); // 获取节点的下标，确定是年，月，日等等中的一种
+                var maxValue = this.pickerArray[index].length;
+                if (temDis < -maxValue * 2 + 6) { // *2是每个节点是2em,+6是因为最终要留至少三个节点在屏幕上
+                    temDis = -maxValue * 2 + 6;
+                }
+                /*确定最终的滚动位置*/
+//                setTimeout(()=> {
+//                    this.touchTarget.style["-webkit-transform"] = 'translateY(' + temDis + 'em)';
+//                }, 0);
+                /*设置当前值*/
+                var types = this.types;
+                var value = this.pickerArray[index][Math.abs(temDis - 6) / 2 - 1],
+                        currentMonth; //-1是因为重复算了一次初始值
+                /*确定最终的滚动位置*/
+                switch (types[index]) {
+                    case "年": // 日期
+                        // 判断是否当前日期超出当月或当年最大日期
+                        var yearDay = this.getDaysInMonth(value, this.currentValue.getMonth() + 1) < this.currentValue.getDate() ? this.getDaysInMonth(value, this.currentValue.getMonth() + 1) : this.currentValue.getDate()
+                        this.currentValue = new Date(value, this.currentValue.getMonth(), yearDay, this.currentValue.getHours(), this.currentValue.getMinutes());
+                        this.changeCurrent();
+                        break;
+                    case "月":
+                        // 判断是否当前日期超出当月或当年最大日期
+                        var monthDay = this.getDaysInMonth(this.currentValue.getFullYear(), value) < this.currentValue.getDate() ? this.getDaysInMonth(this.currentValue.getFullYear(), value) : this.currentValue.getDate()
+                        this.currentValue = new Date(this.currentValue.getFullYear(), value - 1, monthDay, this.currentValue.getHours(), this.currentValue.getMinutes());
+                        this.changeCurrent();
+                        break;
+                    case "日":
+                        this.currentValue = new Date(this.currentValue.getFullYear(), this.currentValue.getMonth(), Number(value), this.currentValue.getHours(), this.currentValue.getMinutes());
+                        this.changeCurrent();
+                        break;
+                    case "时":
+                        this.currentValue = new Date(this.currentValue.getFullYear(), this.currentValue.getMonth(), this.currentValue.getDate(), Number(value), this.currentValue.getMinutes());
+                        this.changeCurrent();
+                        break;
+                    case "分":
+                        this.currentValue = new Date(this.currentValue.getFullYear(), this.currentValue.getMonth(), this.currentValue.getDate(), this.currentValue.getHours(), Number(value));
+                        this.changeCurrent();
+                        break;
+                    case "省":
+                        this.currentProvince = value;
+                        this.changeCurrent();
+                        break;
+                    case "市":
+                        this.currentCity = value;
+                        this.changeCurrent();
+                        break;
+                    case "县":
+                        this.currentArea = value;
+                        this.changeCurrent();
+                        break;
+                    case "custom":
+                        this.currentValue = value;
+                        break;
+                }
+                this.$emit('handlePicker', this.currentValue, index);
+            },
+        }
+    }
+    ;
+</script>
+<style scoped lang="less" rel="stylesheet/less">
+    @import "./style.less";
+</style>

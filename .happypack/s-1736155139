@@ -1,0 +1,23 @@
+/**
+ * Created by yejiaming on 2017/9/28.
+ */
+/**
+ * Created by yejiaming on 2017/2/23.
+ */
+export var selfScroll = {
+    // 当绑定元素插入到 DOM 中。
+    bind: function (el, binding, vnode) {
+        // console.log('首次加载挂载到DOM节点中——一次挂载之运行一次');
+    },
+    inserted: function (el, binding) {
+        // console.log('DOM节点挂载到完毕——一次挂载之运行一次');
+        var top = binding.value ? binding.value : 0;
+    },
+    update: function (el, binding) {},
+    componentUpdated: function (el, binding) {
+        // console.log('完成更新DOM节点或者绑定数据——一次挂载之运行多次');
+    },
+    unbind: function (el, binding) {
+        // console.log('取消该节点的挂载——一次挂载之运行一次');
+    }
+};

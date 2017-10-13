@@ -1,0 +1,125 @@
+@-webkit-keyframes showAnimation{
+    0%{
+        bottom: -100%;
+    }
+    100%{
+        bottom: 0;
+    }
+}
+
+@keyframes showAnimation{
+    0%{
+        bottom: -100%;
+    }
+    100%{
+        bottom: 0;
+    }
+}
+
+@-webkit-keyframes hiddenAnimation{
+    0%{
+        bottom: 0;
+    }
+    100%{
+        bottom: -100%;
+    }
+}
+
+@keyframes hiddenAnimation{
+    0%{
+        bottom: 0;
+    }
+    100%{
+        bottom: -100%;
+    }
+}
+
+.date-picker{
+    font-size: 10px;
+
+    position: fixed;
+    z-index: 9900;
+    top: 0;
+    left: 0;
+
+    display: block;
+    overflow: hidden;
+
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+
+    background-color: rgba(0, 0, 0, .2);
+
+    animation-fill-mode: both;
+    .header-ctrl{
+        &:before{
+            position: absolute;
+            z-index: 15;
+
+            display: block;
+
+            width: 100%;
+            height: 1px;
+
+            content: '';
+            transform: scaleY(.33);
+            transform-origin: 50% 20%;
+
+            background-color: #96979b;
+        }
+    }
+    .picker-warp{
+        font-size: inherit;
+
+        position: absolute;
+        z-index: 9901;
+        bottom: 0;
+        left: 0;
+
+        overflow: hidden;
+
+        width: 100%;
+        height: auto;
+        margin: 0;
+
+        transform: translate3d(0, 0, 0);
+        vertical-align: middle;
+
+        color: #000;
+        background-color: #d5d8df;
+        &.show-animation{
+            -webkit-animation: .5s showAnimation;
+                    animation: .5s showAnimation;
+        }
+        &.hidden-animation{
+            -webkit-animation: .5s hiddenAnimation;
+                    animation: .5s hiddenAnimation;
+        }
+    }
+    .header-ctrl{
+        position: relative;
+
+        display: flex;
+
+        background-color: #f1f2f4;
+
+        justify-content: space-between;
+        align-items: stretch;
+        &:before{
+            top: 0;
+            left: 0;
+        }
+        span{
+            font-size: 1.6em;
+            line-height: 1em;
+
+            padding: .8em 1em;
+
+            text-align: center;
+
+            color: #0575f2;
+        }
+    }
+}

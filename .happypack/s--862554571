@@ -1,0 +1,36 @@
+/**
+ * Created by yejiaming on 2017/9/28.
+ */
+/**
+ * Created by yejiaming on 2017/2/23.
+ */
+/*获取滚动目标节点对象*/
+var getScrollEventTarget = function (element) {
+    let currentNode = element;
+    while (currentNode && currentNode.tagName !== 'HTML' && currentNode.tagName !== 'BODY' && currentNode.nodeType === 1) {
+        let overflowY = document.defaultView.getComputedStyle(currentNode).overflowY;
+        if (overflowY === 'scroll' || overflowY === 'auto') {
+            return currentNode;
+        }
+        currentNode = currentNode.parentNode;
+    }
+    return window;
+};
+export var sticky = {
+    // 当绑定元素插入到 DOM 中。
+    bind: function (el, binding, vnode) {
+        // console.log('首次加载挂载到DOM节点中——一次挂载之运行一次');
+        var target = getScrollEventTarget(el);
+        var top = binding.value === 'undefined' ? 0 : binding.value;
+    },
+    inserted: function (el) {
+        // console.log('DOM节点挂载到完毕——一次挂载之运行一次');
+    },
+    update: function (_el, binding) {},
+    componentUpdated: function (el, binding) {
+        // console.log('完成更新DOM节点或者绑定数据——一次挂载之运行多次');
+    },
+    unbind: function (el, binding) {
+        // console.log('取消该节点的挂载——一次挂载之运行一次');
+    }
+};

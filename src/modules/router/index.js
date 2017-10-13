@@ -21,10 +21,67 @@ const routes = [
     },
   },
   {
+    path: '/selfScroll',
+    name: 'selfScroll',
+    component(resolve) {
+      require(["@views/self-scroll"],resolve);
+    },
+  },
+  {
+    path: '/scroll',
+    name: 'scroll',
+    component(resolve) {
+      require(["@views/scroll"],resolve);
+    },
+  },
+  {
+    path: '/spinner',
+    name: 'spinner',
+    component(resolve) {
+      require(["@views/spinner"],resolve);
+    },
+  },
+
+  {
+    path: '/sticky',
+    name: 'sticky',
+    component(resolve) {
+      require(["@views/sticky"],resolve);
+    },
+  },
+  {
+    path: '/stickyComponentDemo',
+    name: 'stickyComponentDemo',
+    component(resolve) {
+      require(["@views/sticky-component-demo"],resolve);
+    },
+  },
+  {
+    path: '/stickyFirstEdition',
+    name: 'stickyFirstEdition',
+    component(resolve) {
+      require(["@views/sticky-first-edition"],resolve);
+    },
+  },
+  {
     path: '/picker',
     name: 'picker',
     component(resolve) {
       require(["@views/picker/"],resolve);
+    },
+  },
+  {
+    path: '/pickerFirstEdition',
+    name: 'pickerFirstEdition',
+    component(resolve) {
+      require(["@views/picker-first-edition/"],resolve);
+    },
+  },
+  {
+    path: '/datePicker',
+    name: 'datePicker',
+    component(resolve) {
+      require(["@views/date-picker/"],resolve);
     },
   },
   {

@@ -1,0 +1,1 @@
+{"version":3,"sources":["src/modules/directive/index.js"],"names":["sticky"],"mappings":"AAAA;;;AAGA;AACA,SAAQA,MAAR,QAAqB,UAArB","file":"index.js","sourceRoot":"/Users/yejiaming/Desktop/jmyour/vue-ui","sourcesContent":["/**\n * Created by yejiaming on 2017/9/28.\n */\n// 导出所有的指令\nexport {sticky} from './sticky';"]}

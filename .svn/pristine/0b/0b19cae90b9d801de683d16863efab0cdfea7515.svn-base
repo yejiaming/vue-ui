@@ -1,0 +1,41 @@
+.loadmore {
+    overflow: hidden;
+
+    .content {
+        .dropped {
+            transition: .2s;
+        }
+    }
+
+    .top, .bottom-infinite,.bottom {
+        text-align: center;
+        height: 40px;
+        line-height: 40px;
+    }
+    .inifScroll{
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+    }
+    .top {
+        margin-top: -60px;
+        margin-bottom:20px;
+    }
+
+    .bottom{
+        margin-bottom: -30px;
+    }
+
+    .bottom-infinite {
+        margin-bottom: 0px;
+    }
+
+    .spinner {
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .text {
+        vertical-align: middle;
+    }
+}
