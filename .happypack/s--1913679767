@@ -1,7 +1,7 @@
 /**
  * Created by yejiaming on 2017/9/28.
  */
-import {Scroll} from '../utils/scroll-top';
+import { Scroll } from '../utils/scroll-top';
 export var scroll = {
     // 当绑定元素插入到 DOM 中。
     bind: function (el, binding, vnode) {

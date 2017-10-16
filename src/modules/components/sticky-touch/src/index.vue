@@ -12,7 +12,7 @@
         },
         computed: {
             getPosition(){
-                var position = 'relative';
+                var position = this.cssSupport('position', 'sticky') ? 'sticky' : 'relative';
                 return 'position:' + position;
             }
         },
@@ -22,17 +22,27 @@
         mounted(){
             this.init();
         },
+        deactivated(){
+            if(this.cssSupport('position', 'sticky')) {
+                return;
+            }
+            /*复位*/
+            var elWarp = this.$el.querySelector('.sticky-warp');
+            elWarp.position = 'absolute';
+        },
         methods: {
             init(){
+                if (this.cssSupport('position', 'sticky')) {
+                    return;
+                }
                 var el = this.$el, target = this.$el.parentNode,
                         elWarp = this.$el.querySelector('.sticky-warp'),
-                        top = this.getNumberValue(document.defaultView.getComputedStyle(el).top),
-                        height = this.getNumberValue(document.defaultView.getComputedStyle(el).height);
-                this.addScrollListen(target, ()=> {
+                        top = this.getNumberValue(document.defaultView.getComputedStyle(el).top);
+                this.addScrollListen(target, (event)=> {
                     if (el.getBoundingClientRect().top <= top) {
                         elWarp.style.position = 'fixed';
                     }
-                    if (el.getBoundingClientRect().top>= 0 && elWarp.style.position != 'absolute') {
+                    if (el.getBoundingClientRect().top >= 0 && elWarp.style.position != 'absolute') {
                         elWarp.style.position = 'absolute';
                     }
                 })
@@ -46,36 +56,15 @@
                     return false;
                 }
             },
-            /*获取dom节点的translateY的值*/
-            getTranslateY(dom) {
-                var transformString = dom.style.transform;
-                if (transformString) {
-                    return Number(transformString.match(/\+?\-?\d+/g)[0]);
-                } else {
-                    return 0;
-                }
-            },
             getNumberValue(pxValue){
-                var value =  String(pxValue).match(/^\-?\+?[0-9]+/g);
+                var value = String(pxValue).match(/^\-?\+?[0-9]+/g);
                 return value ? Number(value) : undefined;
             },
             addScrollListen(target, cb){
                 target.addEventListener('y-scroll', (event)=> {
-                    cb && cb();
+                    cb && cb(event);
                 });
-            },
-            getScrollEventTarget: function (element) {
-                let currentNode = element;
-                while (currentNode && currentNode.tagName !== 'HTML' &&
-                currentNode.tagName !== 'BODY' && currentNode.nodeType === 1) {
-                    let overflowY = document.defaultView.getComputedStyle(currentNode).overflowY;
-                    if (overflowY === 'scroll' || overflowY === 'auto') {
-                        return currentNode;
-                    }
-                    currentNode = currentNode.parentNode;
-                }
-                return window;
-            },
+            }
         },
     }
 
